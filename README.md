@@ -1,27 +1,23 @@
 # 鱼市雷达 + 推探
 
-两个完整工具。下载 Release 里的 zip，解压后 `npm install && npm run dev`。
+解压后 **双击 html** 就能用，不用安装 Node。
 
-## 下载（GitHub Release，不会过期）
+## 下载即用包（推荐）
 
-| 工具 | 做什么 | 下载 |
+| 工具 | 解压后怎么开 | 下载 |
 | --- | --- | --- |
-| 鱼市雷达 | 闲鱼类目、近期排行、价格带、商品库 CSV | [yushi-radar-1.0.0.zip](https://github.com/xiaojiu885210-arch/yushi-tuitan-tools/releases/download/v1.0.0/yushi-radar-1.0.0.zip) |
-| 推探 | X 创业博主探盘，中英双路搜高播放 / 点赞 / 收藏 | [tuitan-1.0.0.zip](https://github.com/xiaojiu885210-arch/yushi-tuitan-tools/releases/download/v1.0.0/tuitan-1.0.0.zip) |
+| 鱼市雷达 | 双击 `鱼市雷达.html` 或 `双击打开.bat` | [yushi-radar-instant.zip](https://github.com/xiaojiu885210-arch/yushi-tuitan-tools/releases/download/v1.1.0/yushi-radar-instant.zip) |
+| 推探 | 双击 `推探.html` 或 `双击打开.bat` | [tuitan-instant.zip](https://github.com/xiaojiu885210-arch/yushi-tuitan-tools/releases/download/v1.1.0/tuitan-instant.zip) |
+| 两个都要 | 双击 `打开这里.html` | [both-instant.zip](https://github.com/xiaojiu885210-arch/yushi-tuitan-tools/releases/download/v1.1.0/both-instant.zip) |
 
-最新发布页：https://github.com/xiaojiu885210-arch/yushi-tuitan-tools/releases/latest
+发布页：https://github.com/xiaojiu885210-arch/yushi-tuitan-tools/releases/latest
 
-## 启动
+不要点 `package.json`。那是源码，不是安装包。
 
-需要 Node.js 20+。
+## 怎么用
 
-```bash
-unzip yushi-radar-1.0.0.zip
-cd yushi-radar
-npm install
-npm run dev
-```
+**鱼市雷达**：打开即有演示商品、排行、价格带、CSV。要真实闲鱼数据，用书签在闲鱼搜索页回传。
 
-推探同样：解压 `tuitan-1.0.0.zip` 后 `npm install && npm run dev`。
+**推探**：打开即能用中文搜创业博主（自动扩英文）。要真实 X 数据，用书签在 X 搜索页回传。
 
-Cookie / Bearer Token 只存在你自己的浏览器，仓库里没有密钥。
+Cookie / Token 只存在你自己的浏览器。

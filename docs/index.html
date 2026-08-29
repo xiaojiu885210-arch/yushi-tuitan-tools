@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>鱼市雷达 · 推探</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231c1915'/><text x='16' y='22' text-anchor='middle' font-size='14' fill='%23f4efe6' font-family='Georgia'>Y</text></svg>" />
+  <style>
+    :root {
+      --bg: #111214;
+      --fg: #eceae4;
+      --muted: #8b8d92;
+      --line: color-mix(in oklab, #eceae4 12%, transparent);
+      --yushi-bg: #f3eee4;
+      --yushi-ink: #1c1915;
+      --yushi-muted: #6f685c;
+      --tuitan-bg: #0b0c0e;
+      --tuitan-fg: #eceae4;
+      --radius: 20px;
+      --font: "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+      --display: Georgia, "Songti SC", "STSong", "SimSun", serif;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      padding: 28px 18px 48px;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; }
+    .kicker {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    h1 {
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      letter-spacing: -0.03em;
+      line-height: 1.12;
+      text-wrap: balance;
+      margin: 10px 0 8px;
+    }
+    .lead {
+      color: var(--muted);
+      max-width: 38rem;
+      line-height: 1.55;
+      text-wrap: pretty;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 36px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 720px) { .grid { grid-template-columns: 1fr 1fr; } }
+    a.card {
+      display: block;
+      text-decoration: none;
+      border-radius: var(--radius);
+      padding: 28px 24px 24px;
+      min-height: 240px;
+      transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 250ms;
+    }
+    a.card:hover { transform: translateY(-2px); }
+    a.card:active { transform: scale(0.98); }
+    .yushi { background: var(--yushi-bg); color: var(--yushi-ink); }
+    .tuitan { background: var(--tuitan-bg); color: var(--tuitan-fg); border: 1px solid var(--line); }
+    .brand {
+      font-family: var(--display);
+      font-size: 1.35rem;
+      letter-spacing: -0.02em;
+    }
+    .brand span { font-family: var(--font); font-size: 0.85rem; margin-left: 8px; opacity: 0.62; }
+    .card h2 {
+      font-family: var(--display);
+      font-size: 1.85rem;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+      margin: 28px 0 10px;
+      line-height: 1.2;
+      text-wrap: balance;
+    }
+    .card p { margin: 0; line-height: 1.5; font-size: 0.92rem; }
+    .yushi p { color: var(--yushi-muted); }
+    .tuitan p { color: var(--muted); }
+    .go {
+      display: inline-flex;
+      margin-top: 28px;
+      height: 44px;
+      align-items: center;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .yushi .go { background: #243447; color: #f4efe6; }
+    .tuitan .go { background: #d8dce3; color: #0b0c0e; }
+    footer {
+      margin-top: 40px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    button:not(:disabled), [role="button"]:not(:disabled), a.card { cursor: pointer; }
+    @media (prefers-reduced-motion: reduce) {
+      a.card { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="kicker">Instant tools</p>
+    <h1>两个工具，打开就能用。</h1>
+    <p class="lead">不用安装 Node，不用命令行。点进去就是工作台。下载的压缩包里，双击对应的 html 文件也是同一套。</p>
+    <div class="grid">
+      <a class="card yushi" href="yushi.html">
+        <div class="brand">YUSHI<span>鱼市雷达</span></div>
+        <h2>闲鱼类目、排行和价格带。</h2>
+        <p>演示库开箱即用。实搜用本机闲鱼书签回传。商品库可导出 CSV。</p>
+        <span class="go">打开鱼市雷达</span>
+      </a>
+      <a class="card tuitan" href="tuitan.html">
+        <div class="brand">TUITAN<span>推探</span></div>
+        <h2>中文搜创业博主，自动扩成英文。</h2>
+        <p>按播放、点赞、收藏排序。资料库开箱能搜，也可从 X 页回传。</p>
+        <span class="go">打开推探</span>
+      </a>
+    </div>
+    <footer>Cookie 和 Token 只存在你这台电脑的浏览器里。</footer>
+  </div>
+</body>
+</html>

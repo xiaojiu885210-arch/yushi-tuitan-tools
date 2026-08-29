@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>鱼市雷达</title>
+<style>
+:root {
+  --bg: #f3eee4; --fg: #1c1915; --muted: #6f685c; --card: #fffdf8;
+  --line: color-mix(in oklab, #1c1915 12%, transparent);
+  --primary: #243447; --primary-fg: #f4efe6;
+  --ok: #3d6b52; --warn: #9a6b2f;
+  --radius: 16px; --radius-sm: 8px;
+  --font: "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  --display: Georgia, "Songti SC", "STSong", "SimSun", serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+h1,h2,h3 { text-wrap: balance; font-family: var(--display); font-weight: 500; letter-spacing: -0.03em; }
+p { text-wrap: pretty; }
+a { color: inherit; }
+header {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in oklab, var(--bg) 90%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.bar { max-width: 1080px; margin: 0 auto; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 12px; }
+.logo { font-family: var(--display); font-size: 1.2rem; text-decoration: none; }
+.logo em { font-style: normal; font-family: var(--font); font-size: .8rem; color: var(--muted); margin-left: 6px; }
+nav { display: flex; gap: 4px; flex-wrap: wrap; }
+nav button {
+  height: 36px; padding: 0 12px; border: 0; background: transparent; color: var(--muted);
+  border-radius: var(--radius-sm); font: inherit; font-size: .875rem;
+}
+nav button.on, nav button:hover { background: var(--primary); color: var(--primary-fg); }
+.badge { font-size: 11px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: auto; }
+.badge.ok { color: var(--ok); border-color: color-mix(in oklab, var(--ok) 40%, transparent); }
+main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+.hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin: 8px 0; line-height: 1.15; }
+.muted { color: var(--muted); font-size: .92rem; line-height: 1.55; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 24px 0; }
+@media (max-width: 640px) { .stats { grid-template-columns: 1fr; } nav { display: none; } }
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px;
+}
+.card h3 { margin: 0 0 8px; font-size: .82rem; color: var(--muted); font-family: var(--font); letter-spacing: 0; font-weight: 500; }
+.num { font-family: var(--display); font-size: 2rem; font-variant-numeric: tabular-nums; }
+.btn {
+  height: 44px; padding: 0 16px; border: 0; border-radius: 10px; font: inherit; font-weight: 500;
+  background: var(--primary); color: var(--primary-fg);
+}
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+.btn:disabled { opacity: .5; }
+label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 6px; }
+input, select, textarea {
+  width: 100%; height: 44px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card); color: var(--fg); font: inherit; padding: 0 12px;
+}
+textarea { height: 120px; padding: 10px 12px; font-family: var(--mono); font-size: 12px; }
+.grid2 { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 800px) { .grid2 { grid-template-columns: 280px 1fr; } .mobnav { display: none !important; } }
+.cats { display: flex; flex-direction: column; gap: 2px; max-height: 420px; overflow: auto; }
+.cats button {
+  text-align: left; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: .9rem;
+  padding: 10px 10px; border-radius: 8px; min-height: 40px;
+}
+.cats button.child { padding-left: 22px; color: var(--muted); }
+.cats button.on { background: var(--primary); color: var(--primary-fg); }
+.item {
+  display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center;
+  padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); margin-bottom: 8px;
+}
+.rank { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .85rem; }
+.title { font-weight: 500; }
+.meta { color: var(--muted); font-size: .8rem; margin-top: 4px; }
+.price { font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+.barh { height: 8px; background: color-mix(in oklab, var(--primary) 12%, transparent); border-radius: 99px; overflow: hidden; }
+.barh i { display: block; height: 100%; background: var(--primary); }
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--primary); color: var(--primary-fg); padding: 10px 16px; border-radius: 10px;
+  font-size: .875rem; z-index: 50; display: none;
+}
+.mobnav { margin-left: auto; height: 40px; width: 40px; border: 1px solid var(--line); background: var(--card); border-radius: 10px; }
+.sheet { display: none; position: fixed; inset: 0; background: color-mix(in oklab, #1c1915 40%, transparent); z-index: 30; }
+.sheet.on { display: block; }
+.sheet .pane { background: var(--bg); width: min(80vw, 280px); height: 100%; padding: 48px 16px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font: inherit; font-size: .8rem; }
+.hist { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+.hist .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; }
+.hist .col b { display: block; width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; min-height: 2px; }
+.hist .col span { font-size: 10px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <button class="mobnav" id="menuBtn" aria-label="菜单">☰</button>
+    <a class="logo" href="#" data-go="home">YUSHI<em>鱼市雷达</em></a>
+    <nav id="nav">
+      <button data-go="home">总览</button>
+      <button data-go="collect">采集</button>
+      <button data-go="rank">排行</button>
+      <button data-go="lib">商品库</button>
+      <button data-go="market">行情</button>
+    </nav>
+    <span class="badge" id="srcBadge">演示库</span>
+  </div>
+</header>
+<div class="sheet" id="sheet"><div class="pane" id="sheetNav"></div></div>
+<main id="app"></main>
+<div class="toast" id="toast"></div>
+<script>
+const CATS = [
+  {id:"digital",name:"闲置数码",parent:null},
+  {id:"phone",name:"手机",parent:"digital"},{id:"tablet",name:"平板",parent:"digital"},{id:"computer",name:"电脑",parent:"digital"},{id:"audio",name:"影音配件",parent:"digital"},
+  {id:"appliance",name:"家用电器",parent:null},{id:"kitchen",name:"厨房电器",parent:"appliance"},{id:"life-app",name:"生活电器",parent:"appliance"},
+  {id:"fashion",name:"服装鞋包",parent:null},{id:"women",name:"女装",parent:"fashion"},{id:"men",name:"男装",parent:"fashion"},{id:"shoes",name:"鞋靴",parent:"fashion"},{id:"bag",name:"箱包",parent:"fashion"},
+  {id:"beauty",name:"美妆个护",parent:null},{id:"skincare",name:"护肤",parent:"beauty"},{id:"makeup",name:"彩妆",parent:"beauty"},
+  {id:"home",name:"家具家居",parent:null},{id:"furniture",name:"家具",parent:"home"},{id:"decor",name:"家居日用",parent:"home"},
+  {id:"sport",name:"运动户外",parent:null},{id:"fitness",name:"健身器材",parent:"sport"},{id:"outdoor",name:"户外装备",parent:"sport"},
+  {id:"book",name:"图书文娱",parent:null},{id:"textbook",name:"教材考试",parent:"book"},{id:"hobby",name:"文玩乐器",parent:"book"},
+  {id:"baby",name:"母婴玩具",parent:null},{id:"toy",name:"玩具潮玩",parent:"baby"},
+  {id:"auto",name:"汽车用品",parent:null},{id:"pet",name:"宠物用品",parent:null},{id:"food",name:"食品保健",parent:null},
+  {id:"game",name:"游戏电玩",parent:null},{id:"console",name:"游戏主机",parent:"game"},{id:"game-acc",name:"游戏账号",parent:"game"},
+  {id:"virtual",name:"虚拟商品",parent:null},{id:"software",name:"软件工具",parent:"virtual"},{id:"source",name:"源码模板",parent:"virtual"},{id:"card",name:"卡券会员",parent:"virtual"},{id:"service",name:"技能服务",parent:"virtual"}
+];
+const PRESETS = [
+  ["闲鱼采集","闲鱼采集","software"],["自动发货","自动发货","software"],["卡密系统","卡密 发卡","software"],
+  ["铺货搬家","闲鱼铺货","software"],["去水印","去水印 工具","software"],["Excel 插件","Excel 插件","software"],
+  ["油猴脚本","油猴脚本","software"],["小程序源码","小程序源码","source"],["二手 iPhone","iPhone","phone"],["Switch","Switch","console"]
+];
+const AREAS = ["上海","杭州","深圳","北京","广州","成都","武汉","南京","苏州","重庆","西安","长沙","厦门","青岛"];
+const COND = ["全新","几乎全新","轻微使用","使用痕迹"];
+const SOFTWARE = [
+  ["闲鱼类目采集工具 Cookie 接入 价格排行导出",168,214,0.4],["闲鱼店铺自动回复 + 自动发货系统 源码",298,176,1.2],
+  ["闲鱼卡密发卡系统 支持卡券自动发货",128,143,0.8],["闲鱼铺货搬家助手 淘宝商品一键上架",198,97,2.1],
+  ["闲鱼关键词监控 降价提醒 本地运行",88,121,0.3],["Excel 财务对账插件 发票明细自动汇总",69,88,3.4],
+  ["批量去水印工具 本地处理 不上传",39,256,0.6],["油猴脚本合集 电商辅助 可改源码",28,189,1.7],
+  ["PDF 转 Word / Excel 桌面工具 终身",49,132,4.2],["剪映草稿批量导出 字幕提取工具",58,74,2.8],
+  ["闲鱼客服话术库 + 自动回复模板",36,65,5.1],["多平台商品标题生成 类目词库",79,54,1.1],
+  ["Windows 定时备份脚本 图形界面",42,33,6.3],["表格转商品详情页 闲鱼主图模板",25,47,0.9],
+  ["浏览器 Cookie 管理器 多账号隔离",56,81,3.0],["订单导出对账 CSV 一键出表",32,29,7.4],
+  ["采集结果清洗去重 价格分位统计",96,62,1.5],["闲鱼类目树对照表 + 热搜词库 2026",18,203,0.2],
+  ["自动上架定时发布 本地客户端",158,91,2.4],["竞品价格看板 支持多关键词订阅",188,77,0.7],
+  ["发卡网对接闲鱼 订单同步插件",218,58,3.6],["图片压缩加水印批量处理",22,44,8.1],
+  ["聊天记录导出归档 本地加密",45,27,4.8],["验证码识别辅助 自用小工具",68,39,2.2]
+];
+const SOURCE = [["闲鱼风格商品详情页模板 可商用",39,84,1.3],["发卡网站源码 PHP + 管理后台",166,112,2.6],["微信小程序二手交易模板 去中心化演示",268,73,0.5],["React 后台仪表盘模板 图表齐全",88,51,3.9],["个人导航站源码 书签管理",19,96,5.5]];
+const SERVICE = [["代写 Excel 函数 / 表格自动化 按次",30,48,1.0],["小程序上架协助 资质咨询",120,22,4.0],["闲鱼主图设计 详情页排版 一套",50,61,2.0]];
+const OTHER = {
+  phone:["iPhone 13 128G 电池89 国行","小米 14 远山蓝 12+256","红米 K70 游戏机 在保"],
+  tablet:["iPad Air 5 64G wifi","华为 MatePad 11 学习机"],
+  computer:["ThinkPad X1 碳纤 i7 16G","MacBook Air M2 8+256","二手组装主机 3060 小机箱"],
+  audio:["索尼 WH-1000XM4 降噪","佳能 50mm 1.8 STM","AirPods Pro 2 有票"],
+  kitchen:["空气炸锅 5L 几乎全新","九阳破壁机 带发票"],
+  "life-app":["石头扫地机 T7 配件齐全","戴森吹风机 国行"],
+  women:["优衣库摇粒绒外套 M","连衣裙 夏季 几乎没穿"],
+  men:["优衣库 圆领卫衣 L 黑色","休闲西裤 32 码"],
+  shoes:["NB 530 42.5 九成新","耐克 Dunk Low 41"],
+  bag:["北极狐双肩包 20L","公文皮包 通勤"],
+  skincare:["兰蔻粉水 125ml 剩大半","修丽可 CE 精华"],
+  makeup:["NARS 口红 尖沙咀","TF 眼影盘 用过两次"],
+  furniture:["实木书桌 1.2 米 自提","人体工学椅 网面"],
+  decor:["台灯 无极调光","收纳柜 抽屉五层"],
+  fitness:["哑铃一对 10kg","瑜伽垫 加厚 8mm"],
+  outdoor:["骆驼帐篷 三人","登山杖 一对"],
+  textbook:["考研数学 李永乐 全套","公考行测真题 近五年"],
+  hobby:["民谣吉他 41 寸 初学","手办 未开封"],
+  toy:["乐高城市组 缺件说明","盲盒 一整端盒"],
+  auto:["行车记录仪 前后双录","车载无线充"],
+  pet:["猫爬架 大号 自提","狗粮 未拆 10kg"],
+  food:["蛋白粉 2磅 开封少量","茶叶 岩茶 自饮"],
+  console:["Switch OLED 国行 续航版","PS5 光驱版 双手柄"],
+  "game-acc":["Steam 库存整理 游戏钥匙","主机会员 自用转让咨询"],
+  card:["视频会员月卡 正规渠道","网盘会员 年卡"]
+};
+function mulberry(seed){return function(){let t=seed+=0x6d2b79f5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}}
+function catName(id){return (CATS.find(c=>c.id===id)||{}).name||id;}
+function children(id){return CATS.filter(c=>c.parent===id);}
+function buildDemo(){
+  const rand=mulberry(20260829); const out=[]; let i=0;
+  const push=(title,yuan,want,cat,days)=>{
+    const pub=new Date(Date.now()-days*86400000).toISOString();
+    out.push({id:`demo-${cat}-${i++}`,title,priceFen:Math.round(yuan*100),wantCount:want,area:AREAS[Math.floor(rand()*AREAS.length)],seller:`店家${1000+i}`,categoryId:cat,categoryName:catName(cat),keyword:catName(cat),condition:COND[Math.floor(rand()*COND.length)],publishedAt:pub,itemUrl:`https://www.goofish.com/item?id=demo-${i}`,source:"demo"});
+  };
+  SOFTWARE.forEach(r=>push(r[0],r[1],r[2],"software",r[3]));
+  SOURCE.forEach(r=>push(r[0],r[1],r[2],"source",r[3]));
+  SERVICE.forEach(r=>push(r[0],r[1],r[2],"service",r[3]));
+  for (const cat of CATS){
+    const titles=OTHER[cat.id]; if(!titles) continue;
+    titles.forEach(t=>{
+      const base=cat.id==="phone"?1800:cat.id==="computer"?3200:cat.id==="console"?1400:cat.id==="tablet"?1600:40+Math.round(rand()*260);
+      push(t,Math.round(base*(0.85+rand()*0.35)),8+Math.round(rand()*180),cat.id,rand()*12);
+    });
+  }
+  return out;
+}
+const KEY="yushi-radar-v1";
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{items:[],jobs:[]};}catch{return{items:[],jobs:[]};}}
+function save(s){localStorage.setItem(KEY,JSON.stringify(s));}
+let store=load();
+if(!store.items.length){store.items=buildDemo();store.jobs=[{at:new Date().toISOString(),source:"demo",n:store.items.length,kw:"演示库"}];save(store);}
+let view="home";
+const S={kw:"闲鱼采集",cat:"software",days:7,sort:"want",q:"",libSort:"want",priceMin:"",priceMax:"",importRaw:"",mode:"demo"};
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.style.display="block";clearTimeout(t._id);t._id=setTimeout(()=>t.style.display="none",2200);}
+function yuan(fen){return "¥"+(fen/100).toLocaleString("zh-CN",{maximumFractionDigits:2});}
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&","<":"<",">":">","\"":"""}[c]));}
+function catMatch(it,id){if(!id)return true;if(it.categoryId===id)return true;return children(id).some(c=>c.id===it.categoryId);}
+function kwMatch(it,kw){const t=kw.trim().toLowerCase();if(!t)return true;const blob=`${it.title} ${it.categoryName} ${it.keyword}`.toLowerCase();if(blob.includes(t))return true;const parts=t.split(/\s+/);return parts.length>1&&parts.every(p=>blob.includes(p));}
+function filtered(extra={}){
+  const days=extra.days??S.days, cat=extra.cat??S.cat, kw=extra.kw??S.kw;
+  return store.items.filter(it=>{
+    if(cat && !catMatch(it,cat)) return false;
+    if(kw && extra.useKw!==false && !kwMatch(it,kw) && extra.forceKw) return false;
+    if(extra.useKw && kw && !kwMatch(it,kw)) return false;
+    if(days){const age=Date.now()-new Date(it.publishedAt||0).getTime(); if(age>days*86400000) return false;}
+    const y=it.priceFen/100;
+    if(S.priceMin && y<Number(S.priceMin)) return false;
+    if(S.priceMax && y>Number(S.priceMax)) return false;
+    return true;
+  });
+}
+function stats(rows){
+  if(!rows.length) return {n:0,med:null,avg:null,min:null,max:null,p25:null,p75:null,want:0};
+  const p=[...rows.map(r=>r.priceFen)].sort((a,b)=>a-b);
+  const pick=q=>{const i=(p.length-1)*q,lo=Math.floor(i),hi=Math.ceil(i);return lo===hi?p[lo]:Math.round(p[lo]*(hi-i)+p[hi]*(i-lo));};
+  const sum=p.reduce((a,b)=>a+b,0);
+  return {n:p.length,med:pick(.5),avg:Math.round(sum/p.length),min:p[0],max:p[p.length-1],p25:pick(.25),p75:pick(.75),want:rows.reduce((a,r)=>a+r.wantCount,0)};
+}
+function hist(rows){
+  const p=rows.map(r=>r.priceFen); if(!p.length) return [];
+  const min=Math.min(...p), max=Math.max(...p), buckets=8;
+  if(min===max) return [{label:Math.round(min/100),count:p.length,h:1}];
+  const w=(max-min)/buckets; const bars=Array.from({length:buckets},(_,i)=>({from:min+i*w,to:i===buckets-1?max:min+(i+1)*w,count:0}));
+  p.forEach(v=>{let i=Math.floor((v-min)/w); if(i>=buckets)i=buckets-1; bars[i].count++;});
+  const m=Math.max(...bars.map(b=>b.count),1);
+  return bars.map(b=>({label:Math.round(b.from/100),count:b.count,h:b.count/m}));
+}
+function mergeItems(rows){
+  const map=new Map(store.items.map(x=>[x.id,x]));
+  rows.forEach(r=>map.set(r.id,r));
+  store.items=[...map.values()];
+  save(store);
+}
+const BM=`(() => {
+  const items = []; const seen = new Set();
+  const links = document.querySelectorAll('a[href*="item"]');
+  for (const a of links) {
+    const href = a.href || a.getAttribute("href") || "";
+    const m = href.match(/[?&]id=(\\d{5,})/);
+    if (!m || seen.has(m[1])) continue;
+    let node = a;
+    for (let i = 0; i < 6 && node.parentElement; i++) {
+      const len = (node.innerText || "").replace(/\\s+/g, " ").trim().length;
+      if (len > 18 && len < 500) break;
+      node = node.parentElement;
+    }
+    const text = (node.innerText || "").replace(/\\s+/g, " ").trim();
+    const img = a.querySelector("img");
+    let title = a.getAttribute("title") || (img && img.getAttribute("alt")) || "";
+    if (!title) title = text.replace(/[¥￥]\\s*[\\d.]+.*$/, "").replace(/\\d+\\s*人想要.*$/, "").trim();
+    title = title.split(" ").filter(s => s.length > 1).slice(0, 16).join(" ").slice(0, 80);
+    if (!title || title.length < 2) continue;
+    seen.add(m[1]);
+    const pm = text.match(/[¥￥]\\s*([\\d.]+)/);
+    const wm = text.match(/(\\d+)\\s*人想要/) || text.match(/想要\\s*(\\d+)/);
+    const am = text.match(/(北京|上海|广州|深圳|杭州|成都|重庆|武汉|南京|苏州|西安|长沙|天津|郑州|青岛|厦门|合肥|福州|宁波|无锡|东莞|佛山)/);
+    items.push({ id: m[1], title, price: pm ? Number(pm[1]) : 0, want: wm ? Number(wm[1]) : 0, area: am ? am[1] : "", url: href.indexOf("http")===0?href:"https://www.goofish.com/item?id="+m[1], pic: img ? img.src : "" });
+  }
+  if (!items.length) { alert("没抓到商品。等搜索结果出齐后再点一次书签。"); return; }
+  const payload = { source: "yushi-bookmarklet", items };
+  try { if (window.opener) window.opener.postMessage(payload, "*"); } catch (e) {}
+  const text = JSON.stringify(payload);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => alert("已抓到 " + items.length + " 条。已复制，回到鱼市点「从剪贴板导入」。")).catch(() => prompt("复制下面这一整段，回到鱼市雷达粘贴：", text));
+  } else prompt("复制下面这一整段，回到鱼市雷达粘贴：", text);
+})()`;
+function ingest(payload){
+  const items = payload && payload.items ? payload.items : Array.isArray(payload) ? payload : null;
+  if(!items) return 0;
+  const rows=items.map(it=>{
+    const id=String(it.id||"").trim(); const title=String(it.title||"").trim(); if(!id||!title) return null;
+    const priceFen = it.priceFen!=null?Number(it.priceFen):Math.round(Number(it.price||0)*100);
+    return {id,title:title.slice(0,120),priceFen:Number.isFinite(priceFen)?priceFen:0,wantCount:Number(it.wantCount||it.want||0)||0,area:it.area||"",seller:it.seller||"",categoryId:S.cat,categoryName:catName(S.cat),keyword:S.kw,publishedAt:new Date().toISOString(),itemUrl:it.url||it.itemUrl||("https://www.goofish.com/item?id="+encodeURIComponent(id)),source:"import"};
+  }).filter(Boolean);
+  mergeItems(rows);
+  store.jobs.unshift({at:new Date().toISOString(),source:"import",n:rows.length,kw:S.kw});
+  save(store); return rows.length;
+}
+window.addEventListener("message", ev => {
+  if (ev.data && ev.data.source === "yushi-bookmarklet") {
+    const n = ingest(ev.data); toast("回传 "+n+" 条"); go("lib");
+  }
+});
+function itemCard(it, i){
+  return `<article class="item">
+    <div class="rank">${i!=null?("#"+(i+1)):esc(it.source==="demo"?"演示":"实采")}</div>
+    <div><div class="title">${esc(it.title)}</div><div class="meta">${esc(it.categoryName||"")} · ${esc(it.area||"")} · 想要 ${it.wantCount} · ${esc(it.seller||"")}</div></div>
+    <div class="price">${yuan(it.priceFen)}</div>
+  </article>`;
+}
+function catTree(){
+  return CATS.filter(c=>!c.parent).map(r=>{
+    const kids=children(r.id);
+    return `<button data-cat="${r.id}" class="${S.cat===r.id?"on":""}">${esc(r.name)}</button>`+
+      kids.map(k=>`<button class="child ${S.cat===k.id?"on":""}" data-cat="${k.id}">${esc(k.name)}</button>`).join("");
+  }).join("");
+}
+function render(){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.go===view));
+  const live=store.items.some(i=>i.source!=="demo");
+  const badge=document.getElementById("srcBadge");
+  badge.textContent=live?"含实采":"演示库";
+  badge.className="badge"+(live?" ok":"");
+  const el=document.getElementById("app");
+  if(view==="home"){
+    const st=stats(store.items);
+    el.innerHTML=`<section class="hero">
+      <p class="muted" style="letter-spacing:.2em;font-size:11px;">XIANYU MARKET RADAR</p>
+      <h1>选类目，看近期排行和价格带。</h1>
+      <p class="muted">演示库开箱即用。实搜：打开闲鱼搜索，点书签把商品回传。双击这个 html 就能用，不用安装。</p>
+      <div class="row"><button class="btn" data-go="collect">开始采集</button><button class="btn ghost" data-go="rank">看排行</button></div>
+    </section>
+    <div class="stats">
+      <div class="card"><h3>商品</h3><div class="num">${st.n}</div></div>
+      <div class="card"><h3>中位价</h3><div class="num">${st.med!=null?yuan(st.med):"—"}</div></div>
+      <div class="card"><h3>想要</h3><div class="num">${st.want}</div></div>
+    </div>
+    <h2 style="font-size:1.1rem;">最近采集</h2>
+    ${(store.jobs||[]).slice(0,6).map(j=>`<div class="item"><div class="rank">${esc(j.source)}</div><div><div class="title">${esc(j.kw)}</div><div class="meta">${esc(j.at).slice(0,16).replace("T"," ")}</div></div><div class="price">${j.n} 条</div></div>`).join("")||`<p class="muted">还没有采集记录。</p>`}`;
+  } else if(view==="collect"){
+    el.innerHTML=`<h1>采集</h1>
+    <p class="muted">选类目和关键词。演示库立刻入库；实搜请用本机闲鱼 + 书签。</p>
+    <div class="grid2" style="margin-top:16px;">
+      <div class="card"><h3>类目</h3><div class="cats">${catTree()}</div></div>
+      <div>
+        <div class="card">
+          <label>关键词</label><input id="kw" value="${esc(S.kw)}" />
+          <div class="chips" style="margin:10px 0;">${PRESETS.map(p=>`<button class="chip" data-preset="${p[2]}|${p[1]}">${esc(p[0])}</button>`).join("")}</div>
+          <div class="grid2" style="grid-template-columns:1fr 1fr;margin-top:8px;">
+            <div><label>时间窗</label>
+              <select id="days">${[1,3,7,14,0].map(d=>`<option value="${d}" ${Number(S.days)===d?"selected":""}>${d?("近 "+d+" 天"):"不限"}</option>`).join("")}</select>
+            </div>
+            <div><label>数据源</label>
+              <select id="mode"><option value="demo" ${S.mode==="demo"?"selected":""}>演示库</option><option value="browser" ${S.mode==="browser"?"selected":""}>本机闲鱼书签</option></select>
+            </div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="btn" id="run">${S.mode==="browser"?"打开闲鱼搜索":"从演示库入库"}</button>
+            <button class="btn ghost" id="copyBm">复制回传书签脚本</button>
+          </div>
+          <p class="muted" style="margin-top:10px;">书签用法：浏览器新建书签，网址粘贴刚复制的脚本。打开闲鱼搜索结果后点该书签，再回到这里导入。</p>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <label>粘贴 JSON / 从剪贴板导入</label>
+          <textarea id="raw" placeholder='{"source":"yushi-bookmarklet","items":[...]}'>${esc(S.importRaw)}</textarea>
+          <div class="row"><button class="btn ghost" id="imp">解析并入库</button><button class="btn ghost" id="clip">从剪贴板导入</button></div>
+        </div>
+      </div>
+    </div>`;
+  } else if(view==="rank"){
+    let rows=store.items.filter(it=>catMatch(it,S.cat||"software"));
+    if(S.days){rows=rows.filter(it=>Date.now()-new Date(it.publishedAt||0).getTime()<=S.days*86400000);}
+    rows=[...rows].sort((a,b)=>b.wantCount-a.wantCount).slice(0,80);
+    el.innerHTML=`<h1>近期排行</h1>
+      <p class="muted">按「想要」排序。当前类目：${esc(catName(S.cat||"software"))}</p>
+      <div class="row"><select id="rdays">${[1,3,7,14,0].map(d=>`<option value="${d}" ${Number(S.days)===d?"selected":""}>${d?("近 "+d+" 天"):"不限"}</option>`).join("")}</select>
+      <select id="rcat">${CATS.map(c=>`<option value="${c.id}" ${S.cat===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>
+      <div style="margin-top:16px;">${rows.map((it,i)=>itemCard(it,i)).join("")||`<p class="muted">这一窗没有商品。</p>`}</div>`;
+  } else if(view==="lib"){
+    let rows=store.items.filter(it=>{
+      if(S.q && !kwMatch(it,S.q)) return false;
+      return true;
+    });
+    if(S.libSort==="want") rows=[...rows].sort((a,b)=>b.wantCount-a.wantCount);
+    else if(S.libSort==="price") rows=[...rows].sort((a,b)=>a.priceFen-b.priceFen);
+    else if(S.libSort==="new") rows=[...rows].sort((a,b)=>(b.publishedAt||"").localeCompare(a.publishedAt||""));
+    else rows=[...rows].sort((a,b)=>(b.publishedAt||"").localeCompare(a.publishedAt||""));
+    el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;">
+      <div><h1>商品库</h1><p class="muted">已入库 ${store.items.length} 条。</p></div>
+      <button class="btn" id="csv">导出 CSV</button>
+    </div>
+    <div class="grid2" style="grid-template-columns:1fr 1fr;margin:16px 0;">
+      <div><label>搜索</label><input id="lq" value="${esc(S.q)}" placeholder="标题 / 卖家 / 关键词" /></div>
+      <div><label>排序</label><select id="ls"><option value="want" ${S.libSort==="want"?"selected":""}>想要最多</option><option value="new" ${S.libSort==="new"?"selected":""}>最新上架</option><option value="price" ${S.libSort==="price"?"selected":""}>价格低到高</option></select></div>
+    </div>
+    ${rows.slice(0,200).map(it=>itemCard(it)).join("")}`;
+  } else if(view==="market"){
+    const rows=store.items.filter(it=>catMatch(it,S.cat||"software"));
+    const st=stats(rows); const bars=hist(rows);
+    el.innerHTML=`<h1>行情</h1>
+      <p class="muted">价格带按当前类目 ${esc(catName(S.cat||"software"))} 统计。</p>
+      <div class="row"><select id="mcat">${CATS.map(c=>`<option value="${c.id}" ${S.cat===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>
+      <div class="stats">
+        <div class="card"><h3>样本</h3><div class="num">${st.n}</div></div>
+        <div class="card"><h3>中位</h3><div class="num">${st.med!=null?yuan(st.med):"—"}</div></div>
+        <div class="card"><h3>P25 – P75</h3><div class="num" style="font-size:1.4rem;">${st.p25!=null?yuan(st.p25)+" – "+yuan(st.p75):"—"}</div></div>
+      </div>
+      <div class="card"><h3>价格带</h3><div class="hist">${bars.map(b=>`<div class="col"><b style="height:${Math.max(8,b.h*100)}px"></b><span>${b.label}</span></div>`).join("")||"<p class=muted>没有数据</p>"}</div></div>`;
+  }
+}
+function go(v){view=v;document.getElementById("sheet").classList.remove("on");render();}
+document.addEventListener("click", async e=>{
+  const t=e.target.closest("[data-go],[data-cat],[data-preset],#run,#copyBm,#imp,#clip,#csv,#menuBtn,.pane button");
+  if(!t) return;
+  if(t.id==="menuBtn"){const sh=document.getElementById("sheet"); sh.classList.add("on"); document.getElementById("sheetNav").innerHTML=`<p style="font-family:var(--display);font-size:1.2rem;">鱼市</p>`+["home|总览","collect|采集","rank|排行","lib|商品库","market|行情"].map(x=>{const [id,l]=x.split("|");return `<button data-go="${id}" style="display:block;width:100%;text-align:left;height:44px;border:0;background:transparent;font:inherit;">${l}</button>`;}).join(""); return;}
+  if(t.dataset.go){go(t.dataset.go);return;}
+  if(t.dataset.cat){S.cat=t.dataset.cat;render();return;}
+  if(t.dataset.preset){const [c,k]=t.dataset.preset.split("|");S.cat=c;S.kw=k;render();return;}
+  if(t.id==="copyBm"){await navigator.clipboard.writeText("javascript:"+encodeURIComponent(BM)).catch(()=>{}); toast("已复制书签脚本，粘到浏览器书签网址里"); return;}
+  if(t.id==="run"){
+    S.kw=document.getElementById("kw").value; S.days=Number(document.getElementById("days").value); S.mode=document.getElementById("mode").value;
+    if(S.mode==="demo"){
+      const demo=buildDemo();
+      const rows=demo.filter(it=>catMatch(it,S.cat) && kwMatch(it,S.kw));
+      const take=rows.length?rows:demo.filter(it=>catMatch(it,S.cat));
+      mergeItems(take.length?take:demo.slice(0,20));
+      store.jobs.unshift({at:new Date().toISOString(),source:"demo",n:(take.length||20),kw:S.kw}); save(store);
+      toast("已入库 "+(take.length||20)+" 条演示商品"); go("rank");
+    } else {
+      const u=new URL("https://www.goofish.com/search"); if(S.kw) u.searchParams.set("q",S.kw);
+      window.open(u.toString(),"_blank"); toast("在闲鱼页点「鱼市回传」书签");
+    }
+    return;
+  }
+  if(t.id==="imp"){
+    S.importRaw=document.getElementById("raw").value;
+    try{const n=ingest(JSON.parse(S.importRaw)); toast("入库 "+n+" 条"); go("lib");}
+    catch{toast("JSON 解析失败");}
+    return;
+  }
+  if(t.id==="clip"){
+    try{const txt=await navigator.clipboard.readText(); const n=ingest(JSON.parse(txt)); toast("入库 "+n+" 条"); go("lib");}
+    catch{toast("剪贴板里没有可用 JSON");}
+    return;
+  }
+  if(t.id==="csv"){
+    const keys=["id","title","price_yuan","want","area","seller","category","keyword","published_at","url","source"];
+    const rows=store.items.map(it=>({id:it.id,title:it.title,price_yuan:(it.priceFen/100).toFixed(2),want:it.wantCount,area:it.area,seller:it.seller,category:it.categoryName,keyword:it.keyword,published_at:it.publishedAt,url:it.itemUrl,source:it.source}));
+    const escC=v=>{const s=v==null?"":String(v); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
+    const csv="\uFEFF"+[keys.join(","),...rows.map(r=>keys.map(k=>escC(r[k])).join(","))].join("\n");
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download="yushi-listings.csv"; a.click();
+    toast("已导出 CSV"); return;
+  }
+});
+document.addEventListener("change", e=>{
+  if(e.target.id==="rdays"||e.target.id==="days") {S.days=Number(e.target.value); render();}
+  if(e.target.id==="rcat"||e.target.id==="mcat") {S.cat=e.target.value; render();}
+  if(e.target.id==="ls") {S.libSort=e.target.value; render();}
+  if(e.target.id==="mode") {S.mode=e.target.value; render();}
+});
+document.addEventListener("input", e=>{
+  if(e.target.id==="lq"){S.q=e.target.value; render(); e.target.focus(); const v=e.target.value; e.target.setSelectionRange(v.length,v.length);}
+  if(e.target.id==="kw") S.kw=e.target.value;
+  if(e.target.id==="raw") S.importRaw=e.target.value;
+});
+document.getElementById("sheet").addEventListener("click", e=>{ if(e.target.id==="sheet") e.target.classList.remove("on"); });
+render();
+</script>
+</body>
+</html>

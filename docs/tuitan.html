@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>推探</title>
+<style>
+:root {
+  --bg: #0b0c0e; --fg: #eceae4; --muted: #8b8d92; --card: #141518;
+  --line: color-mix(in oklab, #eceae4 12%, transparent);
+  --primary: #d8dce3; --primary-fg: #0b0c0e;
+  --ok: #5a9a74; --warn: #b08948;
+  --radius: 16px; --radius-sm: 8px;
+  --font: "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  --display: Georgia, "Songti SC", "STSong", "SimSun", serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+h1,h2,h3 { text-wrap: balance; font-family: var(--display); font-weight: 500; letter-spacing: -0.03em; }
+p { text-wrap: pretty; }
+a { color: inherit; }
+header {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in oklab, var(--bg) 90%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.bar { max-width: 1080px; margin: 0 auto; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 12px; }
+.logo { font-family: var(--display); font-size: 1.2rem; text-decoration: none; color: var(--fg); }
+.logo em { font-style: normal; font-family: var(--font); font-size: .8rem; color: var(--muted); margin-left: 6px; }
+nav { display: flex; gap: 4px; flex-wrap: wrap; }
+nav button {
+  height: 36px; padding: 0 12px; border: 0; background: transparent; color: var(--muted);
+  border-radius: var(--radius-sm); font: inherit; font-size: .875rem;
+}
+nav button.on, nav button:hover { background: var(--primary); color: var(--primary-fg); }
+.badge { font-size: 11px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: auto; }
+.badge.ok { color: var(--ok); border-color: color-mix(in oklab, var(--ok) 40%, transparent); }
+main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+.hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin: 8px 0; line-height: 1.15; }
+.muted { color: var(--muted); font-size: .92rem; line-height: 1.55; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 24px 0; }
+@media (max-width: 640px) { .stats { grid-template-columns: 1fr; } nav { display: none; } }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.card h3 { margin: 0 0 8px; font-size: .82rem; color: var(--muted); font-family: var(--font); letter-spacing: 0; font-weight: 500; }
+.num { font-family: var(--display); font-size: 2rem; font-variant-numeric: tabular-nums; }
+.btn {
+  height: 44px; padding: 0 16px; border: 0; border-radius: 10px; font: inherit; font-weight: 500;
+  background: var(--primary); color: var(--primary-fg);
+}
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 6px; }
+input, select, textarea {
+  width: 100%; height: 44px; border: 1px solid var(--line); border-radius: 10px;
+  background: #121316; color: var(--fg); font: inherit; padding: 0 12px;
+}
+textarea { height: 120px; padding: 10px 12px; font-family: var(--mono); font-size: 12px; }
+.searchbox { display: flex; gap: 8px; }
+.searchbox input { flex: 1; }
+.chip { height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: .78rem; }
+.chip.on { background: var(--primary); color: var(--primary-fg); border-color: transparent; }
+.creator, .post {
+  display: grid; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--card); margin-bottom: 8px;
+}
+.creator { grid-template-columns: 44px 1fr auto; align-items: center; }
+.av {
+  width: 44px; height: 44px; border-radius: 50%; background: #22242a; display: grid; place-items: center;
+  font-size: .85rem; font-weight: 600; overflow: hidden;
+}
+.av img { width: 100%; height: 100%; object-fit: cover; }
+.handle { color: var(--muted); font-size: .8rem; }
+.fol { font-variant-numeric: tabular-nums; font-size: .85rem; white-space: nowrap; }
+.metrics { display: flex; gap: 12px; color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.heat { font-variant-numeric: tabular-nums; color: var(--primary); font-size: .85rem; }
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--primary); color: var(--primary-fg); padding: 10px 16px; border-radius: 10px;
+  font-size: .875rem; z-index: 50; display: none;
+}
+.mobnav { margin-left: auto; height: 40px; width: 40px; border: 1px solid var(--line); background: var(--card); color: var(--fg); border-radius: 10px; }
+.sheet { display: none; position: fixed; inset: 0; background: color-mix(in oklab, #000 50%, transparent); z-index: 30; }
+.sheet.on { display: block; }
+.sheet .pane { background: var(--bg); width: min(80vw, 280px); height: 100%; padding: 48px 16px; }
+.lanes { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 16px; }
+@media (min-width: 800px) { .mobnav { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <button class="mobnav" id="menuBtn" aria-label="菜单">☰</button>
+    <a class="logo" href="#" data-go="home">TUITAN<em>推探</em></a>
+    <nav>
+      <button data-go="home">总览</button>
+      <button data-go="search">搜索</button>
+      <button data-go="creators">博主</button>
+      <button data-go="posts">帖子</button>
+      <button data-go="topics">话题</button>
+      <button data-go="connect">接入</button>
+    </nav>
+    <span class="badge" id="srcBadge">资料库</span>
+  </div>
+</header>
+<div class="sheet" id="sheet"><div class="pane" id="sheetNav"></div></div>
+<main id="app"></main>
+<div class="toast" id="toast"></div>
+<script>
+const TOPICS = [
+  {id:"startup",name:"创业",zh:["创业","创业者","创始人","搞事情","从0到1","创业公司"],en:["startup","founder","entrepreneur","founders","venture"],tags:["#startup","#Founder","#创业"]},
+  {id:"indie",name:"独立开发",zh:["独立开发","独立开发者","一人公司","个人开发","独立产品"],en:["indie hacker","indiehackers","solopreneur","build in public","solo founder"],tags:["#IndieHackers","#buildinpublic","#独立开发"]},
+  {id:"global",name:"出海",zh:["出海","出海产品","产品出海","海外市场","国际化"],en:["go global","international","overseas","global market","export product"],tags:["#出海","#global"]},
+  {id:"ai",name:"AI",zh:["人工智能","大模型","智能体","AI 产品","AI 创业"],en:["AI","LLM","agent","artificial intelligence","AI startup"],tags:["#AI","#LLM","#BuildInPublic"]},
+  {id:"saas",name:"SaaS",zh:["订阅","工具产品","B端","软件服务"],en:["SaaS","B2B","subscription","software as a service","MRR"],tags:["#SaaS","#MRR"]},
+  {id:"money",name:"搞钱",zh:["搞钱","变现","赚钱","副业","被动收入","现金流"],en:["make money","monetize","revenue","side hustle","cashflow","profit"],tags:["#搞钱","#SideHustle"]},
+  {id:"growth",name:"增长",zh:["增长","获客","分发","投放","用户增长","流量"],en:["growth","distribution","acquisition","marketing","SEO","content"],tags:["#growth","#SEO"]},
+  {id:"funding",name:"融资",zh:["融资","投资人","风险投资","种子轮","估值"],en:["funding","venture capital","seed round","investor","YC","raise"],tags:["#funding","#YC"]},
+  {id:"content",name:"内容",zh:["内容创业","自媒体","短视频","写公开","个人品牌"],en:["content","creator","personal brand","newsletter","audience"],tags:["#Creator","#Content"]},
+  {id:"oss",name:"开源",zh:["开源","开源项目","黑客松","开发者工具"],en:["open source","hackathon","devtools","github"],tags:["#opensource","#hackathon"]},
+  {id:"product",name:"产品",zh:["产品","打磨","上线","需求","PMF"],en:["product","ship","PMF","launch","MVP"],tags:["#build","#ship"]},
+  {id:"web3",name:"Web3",zh:["加密","链上","Web3","区块链"],en:["crypto","web3","onchain","blockchain"],tags:["#crypto","#web3"]}
+];
+const EXTRA = [["播放",["views","impressions"]],["点赞",["likes","faves"]],["收藏",["bookmarks","saves"]],["博主",["creator","account"]],["账号",["account","profile"]],["工具",["tool","app"]],["出海",["go global","export"]],["独立开发",["indie hacker","solopreneur"]]];
+const NEI = {startup:["indie","global","ai","funding","money"],indie:["saas","growth","money","startup","product"],global:["startup","indie","saas","ai"],ai:["startup","indie","product","oss"],saas:["indie","growth","money"],money:["indie","startup","content"],growth:["content","saas","indie"],funding:["startup","ai"],content:["growth","money"],oss:["ai","product"],product:["indie","saas"],web3:["startup","money"]};
+const CREATORS = [
+  ["IndieHackers","Indie Hackers","Work for yourself and make $10k/mo.",150371,"en",["indie","saas","money"]],
+  ["levelsio","levelsio","Nomad indie hacker. Photo AI, Remote OK.",520000,"en",["indie","saas","money"]],
+  ["paulg","Paul Graham","Y Combinator. Essays on startups.",1800000,"en",["startup","funding","product"]],
+  ["ycombinator","Y Combinator","The world's startup accelerator.",1400000,"en",["startup","funding","growth"]],
+  ["marclou","Marc Lou","Solo SaaS empire. Ships fast, prices in public.",180000,"en",["indie","saas","growth"]],
+  ["thekitze","kitze","tinkerer.club. Ships products in public.",120000,"en",["indie","product","saas"]],
+  ["GergelyOrosz","Gergely Orosz","Writing @Pragmatic_Eng. Formerly Uber & Skype.",280000,"en",["product","growth","indie"]],
+  ["labenz","Nathan Labenz","AI Scout, host of The Cognitive Revolution.",98000,"en",["ai","startup","content"]],
+  ["tibo_maker","Tibo","Growth playbook for indie makers.",95000,"en",["growth","indie","content"]],
+  ["LabSpeculation","投机实验室","SpaceX / 马斯克创业史笔记。",89000,"zh",["startup","funding","content"]],
+  ["jameygannon","techbimbo","business stylist & ai creative director.",54000,"en",["money","indie","content"]],
+  ["1024DevHub","1024","Developer & Tech Creator.",54000,"zh",["indie","oss","product"]],
+  ["illyism","ILIAS ISM","I help SaaS companies grow. $30k/$15k/$10k/mo.",41000,"en",["saas","growth","indie"]],
+  ["WolfMoneyNotes","狼哥搞钱笔记","前大厂高级产品经理｜创业实战中。",42000,"zh",["money","startup","content"]],
+  ["jenzhuscott","Jen Zhu","Cofounder/CEO. Chinese entrepreneurs vs US mindset.",34000,"en",["startup","global","ai"]],
+  ["indiehackercase","Olivert","数据分析师，分享AI自媒体搞钱副业。",32558,"zh",["indie","ai","money"]],
+  ["Lakr233","砍砍","独立开发者。工业生产软件时代，护城河在哪里。",28000,"zh",["indie","product","ai"]],
+  ["alexabelonix","Alexa | Startup founder","Quit a bank to build startups.",25868,"en",["startup","indie","growth"]],
+  ["pangyusio","Pangyu 胖鱼","CS PhD | LLM Engineer | AI · 科技 · 社会",21000,"zh",["ai","startup","content"]],
+  ["mityasmusin","Mitya Smusin","Founder of yellow systems and shoutout.",22000,"en",["startup","money","growth"]],
+  ["AYi_AInotes","AYi","AI 实用主义，专注AI落地。KEEP BUILDING。业务出海。",18200,"zh",["ai","global","startup"]],
+  ["ciwbrief","China Innovation Watch","China’s tech breakthroughs and market intelligence.",18000,"en",["ai","global","startup"]],
+  ["nini_incrypto_","nini","长期关注美股、crypto、AI。",16000,"zh",["ai","money","web3"]],
+  ["sushilwtf","Sushil","building painhuntr | en route to indie hacker",12000,"en",["indie","growth","product"]],
+  ["guishou_56","Niko","前360安全开发工程师｜现独立开发者。$0 → $10000/月 出海。",6400,"zh",["indie","global","saas"]],
+  ["Degen_Kerry","Kerry｜AI Indie Hacker","AI独立开发者 | 美股投资人",7843,"zh",["indie","ai","money"]],
+  ["paolo_scales","paolo trivellato","Sell in public. Scaled software to $11,011/mo.",8900,"en",["growth","content","saas"]],
+  ["louszbd","Lou","Code with GLM. Ships with computer-use agents.",9600,"zh",["ai","indie","product"]],
+  ["MennelDev","Mennel","Je crée des App Mobiles vite et bien | Indie Hacker",7600,"en",["indie","product","ai"]],
+  ["lauradang0","laura","startups @usecorgi | building genuine connections",7200,"en",["startup","content","growth"]],
+  ["DLKFZWilliam2","独立开发者William","半路出家的退休 Dev｜全职 Comedian｜写代码。",4300,"zh",["indie","content","global"]],
+  ["Canna2025","0xCanna（AI创业版）","企业垂直Agent系统｜自建中转站",1897,"zh",["ai","startup","web3"]],
+  ["geneningz","张俊林John｜AI创业笔记","Founder & CEO。深圳｜AI Hardware｜AI Apps。",1251,"zh",["ai","startup","product"]],
+  ["DZhao63405","朝朝（AI创业版）","用AI创业。企业AI落地。AI自媒体。",1231,"zh",["ai","startup","content"]],
+  ["lianzijie_web3","链子杰丨PM·创业","前腾讯视频高级PM｜AI变现。",585,"zh",["startup","web3","money"]]
+].map(r=>({handle:r[0],name:r[1],bio:r[2],followers:r[3],lang:r[4],topics:r[5],profileUrl:"https://x.com/"+r[0],source:"catalog"}));
+const POSTS = [
+  ["2093361289137418622","AYi_AInotes","硅谷几十年的软件创业定律，今天被 a16z 正式宣告作废了。代码不再是终极护城河，算力底座才是。","zh",81,103,10962,11,16,["ai","startup","funding"],"2026-08-28T15:33:18.000Z"],
+  ["2093359950693380247","nini_incrypto_","把自己的各交易所资产通过 API 接到 Claude，只开只读。买房、投资、创业这类决定时，直接让它算清楚。","zh",80,32,11666,15,6,["ai","money","startup"],"2026-08-28T15:27:59.000Z"],
+  ["2093356544503226768","Lakr233","害怕吗 独立开发者们 工业生产软件时代 你的护城河在哪里","zh",90,89,24610,13,6,["indie","ai","product"],"2026-08-28T15:14:27.000Z"],
+  ["2093022086281494531","louszbd","/goal Use cua check out music app and recreate it. Compare with the original and keep polish.","en",529,342,83854,20,43,["ai","indie","product"],"2026-08-27T17:05:26.000Z"],
+  ["2093353112996364648","WolfMoneyNotes","摄影好啊！摄影得学。内容创业最稳的基本功之一。","zh",2286,983,194105,71,80,["content","money","startup"],"2026-08-28T15:00:49.000Z"],
+  ["2093288243886498239","LabSpeculation","马斯克和弟弟第一次创业时做过一个叫「砰砰机」的假服务器。Zip2 后来拿到 300 万美元投资。","zh",109,49,51499,31,9,["startup","funding"],"2026-08-28T10:43:03.000Z"],
+  ["2093277661158429120","pangyusio","人一定要跳槽。选择公司本质上和投资股票一样：寻找最有发展前景的标的。","zh",184,56,21566,20,15,["startup","growth"],"2026-08-28T10:01:00.000Z"],
+  ["2093242575448690698","guishou_56","作为出海独立开发者，最搞心态的日常之一：海外 AI 工具和各种订阅。","zh",25,37,2749,25,1,["indie","global","saas"],"2026-08-28T07:41:35.000Z"],
+  ["2093384931443413210","illyism","If I see one more indie hacker selling ad space I'm going to LinkedIn","en",242,7,8442,76,4,["indie","saas"],"2026-08-28T17:07:15.000Z"],
+  ["2093050825308254702","paolo_scales","Building in public is the fastest way to build an audience that will never pay you. Sell in public.","en",95,113,7135,16,3,["growth","indie","money"],"2026-08-27T18:59:38.000Z"],
+  ["2092675452112425323","MennelDev","Apple just made Foundation Model free for indie hackers on iOS. No API key, zero cloud cost.","en",239,398,57029,20,10,["indie","ai","product"],"2026-08-26T18:08:02.000Z"],
+  ["2092485312899608706","sushilwtf","the best indie hacker accounts to follow on X: @marclou @levelsio @tibo_maker @illyism","en",331,466,37223,42,24,["indie","growth","content"],"2026-08-26T05:32:29.000Z"],
+  ["1750870763907760206","mityasmusin","Harsh truths: Product Hunt is ego play. For your first business, do not do a startup. Make $5M in a proven model.","en",1834,1985,415416,186,177,["startup","money","indie"],"2024-01-26T13:18:14.000Z"],
+  ["1773073720069730421","GergelyOrosz","Indie hacking is viable if you have cheap distribution AND stay small enough that large players are uninterested.","en",333,148,384167,10,13,["indie","growth","saas"],"2024-03-27T19:44:51.000Z"],
+  ["1903584344524152974","jenzhuscott","China is a brutally competitive domestic market. Beating American counterparts is sometimes a by-product.","en",1791,473,262998,81,224,["startup","global","ai"],"2025-03-22T23:07:29.000Z"],
+  ["1791091299845587078","IndieHackers","You build. You launch. You fail. This founder got 200+ users in the first 24 hours.","en",235,397,82438,6,8,["indie","growth","product"],"2024-05-16T13:00:17.000Z"],
+  ["2092148740790395299","alexabelonix","indie hackers are here. BUILD IN PUBLIC. cooking a meditation app.","en",98,2,2397,32,2,["indie","startup","product"],"2026-08-25T07:15:04.000Z"],
+  ["2092971182161306101","ciwbrief","A 13 year old just outsold adult AI founders in Hangzhou. The scarce input is the channel.","en",2,0,355,0,0,["ai","startup","growth"],"2026-08-27T13:43:10.000Z"],
+  ["2092712567575838960","jameygannon","if you are a freelancer or solopreneur and don’t have an S-corp yet you NEED to do it.","en",169,254,29755,27,1,["indie","money"],"2026-08-26T20:35:31.000Z"],
+  ["2093083643317293319","lauradang0","When you share your story and build in public, you take ownership of your own narrative.","en",179,34,17870,27,3,["content","startup","growth"],"2026-08-27T21:10:02.000Z"],
+  ["2091938146736812461","labenz","David Li started China's first hackerspace in Shanghai in 2010. Now the open models are Chinese too.","en",1,0,582,0,0,["oss","ai","global"],"2026-08-24T17:18:15.000Z"]
+].map(r=>({id:r[0],handle:r[1],body:r[2],lang:r[3],likes:r[4],bookmarks:r[5],views:r[6],replies:r[7],reposts:r[8],topics:r[9],postedAt:r[10],postUrl:"https://x.com/"+r[1]+"/status/"+r[0],source:"catalog"}));
+function heat(p){return Math.round(p.likes + p.bookmarks*3 + p.views/80 + p.replies*2 + p.reposts*2);}
+POSTS.forEach(p=>p.heat=heat(p));
+function hasCjk(s){return /[\u3400-\u9fff]/.test(s);}
+function tokenize(q){
+  const out=[]; const cleaned=q.trim().toLowerCase(); if(!cleaned) return out;
+  for(const part of cleaned.split(/[\s,，、|/]+/)){
+    if(!part) continue; out.push(part);
+    if(hasCjk(part)&&part.length>=4){ for(let i=0;i<part.length-1;i++) out.push(part.slice(i,i+2)); }
+  }
+  return [...new Set(out)];
+}
+function expand(q){
+  const tokens=tokenize(q); const zh=new Set(); const en=new Set(); const tags=new Set(); const topics=new Set();
+  if(q.trim()){ if(hasCjk(q)) zh.add(q.trim()); else en.add(q.trim()); }
+  for(const t of TOPICS){
+    const hit=tokens.some(tok=>t.zh.some(z=>z.includes(tok)||tok.includes(z))||t.en.some(e=>e.toLowerCase().includes(tok)||tok.includes(e.toLowerCase())));
+    if(hit){ t.zh.forEach(z=>zh.add(z)); t.en.forEach(e=>en.add(e)); t.tags.forEach(g=>tags.add(g)); topics.add(t.id); }
+  }
+  for(const [z,ens] of EXTRA){ if(tokens.some(tok=>z.includes(tok)||tok.includes(z))){ zh.add(z); ens.forEach(e=>en.add(e)); } }
+  if(!topics.size && q.trim()){
+    for(const t of TOPICS.slice(0,6)){ t.zh.forEach(z=>zh.add(z)); t.en.forEach(e=>en.add(e)); t.tags.forEach(g=>tags.add(g)); topics.add(t.id); }
+  }
+  const extra=new Set(); for(const id of topics) for(const n of (NEI[id]||[])) extra.add(n);
+  for(const id of extra){ const t=TOPICS.find(x=>x.id===id); if(!t) continue; t.en.forEach(e=>en.add(e)); t.tags.forEach(g=>tags.add(g)); topics.add(t.id); }
+  return {zh:[...zh].slice(0,16),en:[...en].slice(0,16),tags:[...tags].slice(0,12),topics:[...topics]};
+}
+function fmt(n){ if(n>=10000) return (n/10000).toFixed(n>=100000?0:1)+"万"; if(n>=1000) return (n/1000).toFixed(1)+"k"; return String(n); }
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&","<":"<",">":">","\"":"""}[c]));}
+const KEY="tuitan-v1";
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{creators:[],posts:[],jobs:[]};}catch{return{creators:[],posts:[],jobs:[]};}}
+function save(s){localStorage.setItem(KEY,JSON.stringify(s));}
+let store=load();
+if(!store.creators.length){store.creators=CREATORS; store.posts=POSTS; save(store);}
+let view="home";
+const S={q:"独立开发",minLikes:0,minBm:0,minViews:0,raw:"",topic:""};
+function toast(m){const t=document.getElementById("toast"); t.textContent=m; t.style.display="block"; clearTimeout(t._id); t._id=setTimeout(()=>t.style.display="none",2200);}
+function blobOfC(c){return `${c.handle} ${c.name} ${c.bio} ${(c.topics||[]).join(" ")}`.toLowerCase();}
+function blobOfP(p){return `${p.handle} ${p.body} ${(p.topics||[]).join(" ")}`.toLowerCase();}
+function matchBlob(blob, plan){
+  const keys=[...plan.zh,...plan.en,...plan.tags,...plan.topics].map(s=>s.toLowerCase().replace(/^#/,""));
+  if(!keys.length) return true;
+  return keys.some(k=>k && blob.includes(k));
+}
+function searchAll(q){
+  const plan=expand(q||"");
+  let creators=store.creators.filter(c=>matchBlob(blobOfC(c),plan));
+  let posts=store.posts.filter(p=>matchBlob(blobOfP(p),plan));
+  posts=posts.filter(p=>p.likes>=S.minLikes && p.bookmarks>=S.minBm && p.views>=S.minViews);
+  posts=[...posts].sort((a,b)=>(b.heat||heat(b))-(a.heat||heat(a)));
+  creators=[...creators].sort((a,b)=>b.followers-a.followers);
+  if(!q.trim()){ creators=store.creators.slice().sort((a,b)=>b.followers-a.followers); posts=store.posts.slice().sort((a,b)=>heat(b)-heat(a)); }
+  return {plan,creators,posts};
+}
+const BM=`(() => {
+  const posts = []; const creators = []; const seen = new Set();
+  document.querySelectorAll('article[data-testid="tweet"]').forEach(art => {
+    const status = art.querySelector('a[href*="/status/"]');
+    const href = status ? status.href : "";
+    const m = href.match(/x\\.com\\/([^/]+)\\/status\\/(\\d+)/) || href.match(/twitter\\.com\\/([^/]+)\\/status\\/(\\d+)/);
+    const bodyEl = art.querySelector('[data-testid="tweetText"]');
+    const body = bodyEl ? bodyEl.innerText.trim() : (art.innerText||"").slice(0,180);
+    const user = m ? m[1] : "";
+    const id = m ? m[2] : href;
+    if (!id || seen.has(id) || !body) return; seen.add(id);
+    const nums = [...art.querySelectorAll('[data-testid$="count"], [data-testid="app-text-transition-container"]')].map(n => n.innerText).join(" ");
+    function grab(label){ const x = art.querySelector('[aria-label*="'+label+'"]'); if(!x) return 0; const n=(x.getAttribute("aria-label")||"").match(/([\\d,.]+)/); return n?Number(n[1].replace(/,/g,"")):0; }
+    posts.push({ id, handle: user, body, likes: grab("Like")||grab("赞"), bookmarks: grab("Bookmark")||grab("书签"), views: grab("View")||grab("查看"), replies: grab("Repl")||grab("回复"), reposts: grab("Repost")||grab("转帖"), url: href });
+  });
+  document.querySelectorAll('[data-testid="UserCell"]').forEach(cell => {
+    const a = cell.querySelector('a[href^="/"]');
+    const handle = a ? a.getAttribute("href").replace("/","").split("/")[0] : "";
+    if (!handle) return;
+    const name = (cell.querySelector('[dir="ltr"] span')||{}).innerText || handle;
+    const bio = (cell.innerText||"").slice(0,160);
+    creators.push({ handle, name, bio, followers: 0, url: "https://x.com/"+handle });
+  });
+  if (!posts.length && !creators.length) { alert("没抓到帖子。等搜索结果出齐后再点书签。"); return; }
+  const payload = { source: "tuitan-bookmarklet", posts, creators };
+  try { if (window.opener) window.opener.postMessage(payload, "*"); } catch(e) {}
+  const text = JSON.stringify(payload);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(()=>alert("已抓到 "+posts.length+" 帖 / "+creators.length+" 账号。回到推探点「从剪贴板导入」。")).catch(()=>prompt("复制：", text));
+  } else prompt("复制：", text);
+})()`;
+function ingest(payload){
+  let n=0;
+  if(payload.creators){
+    const map=new Map(store.creators.map(c=>[c.handle.toLowerCase(),c]));
+    payload.creators.forEach(c=>{
+      if(!c.handle) return;
+      const old=map.get(c.handle.toLowerCase())||{};
+      map.set(c.handle.toLowerCase(),{...old,...c,handle:c.handle,name:c.name||c.handle,bio:c.bio||old.bio||"",followers:Number(c.followers||old.followers||0),lang:c.lang||old.lang||"en",topics:c.topics||old.topics||[],profileUrl:"https://x.com/"+c.handle,source:"import"});
+      n++;
+    });
+    store.creators=[...map.values()];
+  }
+  if(payload.posts){
+    const map=new Map(store.posts.map(p=>[p.id,p]));
+    payload.posts.forEach(p=>{
+      if(!p.id && !p.body) return;
+      const row={id:String(p.id||Math.random()),handle:p.handle||"",body:p.body||"",lang:hasCjk(p.body||"")?"zh":"en",likes:Number(p.likes||0),bookmarks:Number(p.bookmarks||0),views:Number(p.views||0),replies:Number(p.replies||0),reposts:Number(p.reposts||0),topics:p.topics||[],postedAt:p.postedAt||new Date().toISOString(),postUrl:p.url||p.postUrl||"",source:"import"};
+      row.heat=heat(row); map.set(row.id,row); n++;
+    });
+    store.posts=[...map.values()];
+  }
+  save(store); return n;
+}
+window.addEventListener("message", ev => {
+  if (ev.data && ev.data.source === "tuitan-bookmarklet") { const n=ingest(ev.data); toast("回传 "+n+" 条"); go("search"); }
+});
+function av(c){
+  const ini=(c.name||c.handle||"?").slice(0,1);
+  return `<div class="av">${ini}</div>`;
+}
+function creatorCard(c){
+  return `<a class="creator" href="${esc(c.profileUrl)}" target="_blank" rel="noopener">
+    ${av(c)}
+    <div><div>${esc(c.name)}</div><div class="handle">@${esc(c.handle)} · ${esc(c.lang==="zh"?"中文":"EN")}</div><div class="muted" style="font-size:.82rem;margin-top:4px;">${esc(c.bio)}</div></div>
+    <div class="fol">${fmt(c.followers)} 粉</div>
+  </a>`;
+}
+function postCard(p){
+  return `<article class="post">
+    <div style="display:flex;justify-content:space-between;gap:8px;"><a href="https://x.com/${esc(p.handle)}" target="_blank">@${esc(p.handle)}</a><span class="heat">热度 ${fmt(p.heat||heat(p))}</span></div>
+    <div>${esc(p.body)}</div>
+    <div class="metrics"><span>播放 ${fmt(p.views)}</span><span>赞 ${fmt(p.likes)}</span><span>藏 ${fmt(p.bookmarks)}</span><span>评 ${fmt(p.replies)}</span></div>
+  </article>`;
+}
+function render(){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on", b.dataset.go===view));
+  const live=store.creators.some(c=>c.source==="import")||store.posts.some(p=>p.source==="import");
+  const badge=document.getElementById("srcBadge"); badge.textContent=live?"含回传":"资料库"; badge.className="badge"+(live?" ok":"");
+  const el=document.getElementById("app");
+  if(view==="home"){
+    const top=[...store.creators].sort((a,b)=>b.followers-a.followers).slice(0,6);
+    const hot=[...store.posts].sort((a,b)=>heat(b)-heat(a)).slice(0,4);
+    el.innerHTML=`<section class="hero">
+      <p class="muted" style="letter-spacing:.2em;font-size:11px;">X CREATOR SCOUT</p>
+      <h1>把中文问题，搜成能跟的博主。</h1>
+      <p class="muted">X 对中文不友好。推探会同时跑中文、英文对照、话题标签和账号四条车道，再按播放、点赞、收藏排序。双击这个 html 就能用。</p>
+      <div class="row"><button class="btn" data-go="search">全面搜索</button><button class="btn ghost" data-go="connect">接入 / 书签</button></div>
+    </section>
+    <div class="stats">
+      <div class="card"><h3>博主</h3><div class="num">${store.creators.length}</div></div>
+      <div class="card"><h3>帖子</h3><div class="num">${store.posts.length}</div></div>
+      <div class="card"><h3>车道</h3><div class="num">4</div></div>
+    </div>
+    <h2 style="font-size:1.1rem;">高粉博主</h2>${top.map(creatorCard).join("")}
+    <h2 style="font-size:1.1rem;margin-top:24px;">高收藏帖</h2>${hot.map(postCard).join("")}`;
+  } else if(view==="search"){
+    const {plan,creators,posts}=searchAll(S.q);
+    el.innerHTML=`<h1>全面搜索</h1>
+      <p class="muted">输入中文即可。四条车道：中文 · 英文 · 标签 · 账号。</p>
+      <div class="searchbox" style="margin-top:12px;"><input id="sq" value="${esc(S.q)}" placeholder="独立开发 / 出海 / AI 创业" /><button class="btn" id="doSearch">搜索</button></div>
+      <div class="lanes">${[...plan.zh.slice(0,4),...plan.en.slice(0,4),...plan.tags.slice(0,4)].map(x=>`<span class="chip on">${esc(x)}</span>`).join("")}</div>
+      <div class="row" style="margin:0 0 16px;">
+        <div><label>最低点赞</label><input id="ml" type="number" value="${S.minLikes}" /></div>
+        <div><label>最低收藏</label><input id="mb" type="number" value="${S.minBm}" /></div>
+        <div><label>最低播放</label><input id="mv" type="number" value="${S.minViews}" /></div>
+      </div>
+      <h2 style="font-size:1.05rem;">博主 ${creators.length}</h2>
+      ${creators.slice(0,20).map(creatorCard).join("")||`<p class="muted">没有账号。试试「创业」或「indie」。</p>`}
+      <h2 style="font-size:1.05rem;margin-top:20px;">帖子 ${posts.length}</h2>
+      ${posts.slice(0,30).map(postCard).join("")}`;
+  } else if(view==="creators"){
+    const rows=[...store.creators].sort((a,b)=>b.followers-a.followers);
+    el.innerHTML=`<h1>博主</h1><p class="muted">${rows.length} 个账号，按粉丝。</p>${rows.map(creatorCard).join("")}`;
+  } else if(view==="posts"){
+    const rows=[...store.posts].sort((a,b)=>heat(b)-heat(a));
+    el.innerHTML=`<h1>帖子</h1><p class="muted">按热度（赞 + 藏×3 + 播放/80）。</p>${rows.map(postCard).join("")}`;
+  } else if(view==="topics"){
+    el.innerHTML=`<h1>话题</h1><p class="muted">点一个话题，按中英对照去搜。</p>
+      <div class="grid" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));margin-top:16px;">
+        ${TOPICS.map(t=>`<button class="card" data-topic="${t.id}" style="text-align:left;color:inherit;">
+          <h3 style="color:var(--fg);font-family:var(--display);font-size:1.2rem;">${esc(t.name)}</h3>
+          <p class="muted">${esc(t.en.slice(0,3).join(" · "))}</p>
+        </button>`).join("")}
+      </div>`;
+  } else if(view==="connect"){
+    el.innerHTML=`<h1>接入</h1>
+      <p class="muted">浏览器不能直接调 X 接口。完整实搜路径：在 X 搜索页点书签回传。资料库开箱能搜，不接也能用。</p>
+      <div class="card">
+        <h3>从 X 回传</h3>
+        <ol class="muted" style="line-height:1.7;">
+          <li>点下方复制书签脚本，浏览器新建书签，网址粘贴脚本。</li>
+          <li>打开 X 搜索（中文或英文都行），等结果出齐。</li>
+          <li>点该书签。回到推探，点从剪贴板导入。</li>
+        </ol>
+        <div class="row">
+          <button class="btn" id="copyBm">复制回传书签脚本</button>
+          <button class="btn ghost" id="openX">打开 X 搜索</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <label>粘贴 JSON</label>
+        <textarea id="raw" placeholder='{"source":"tuitan-bookmarklet","posts":[],"creators":[]}'>${esc(S.raw)}</textarea>
+        <div class="row"><button class="btn ghost" id="imp">解析并入库</button><button class="btn ghost" id="clip">从剪贴板导入</button></div>
+      </div>`;
+  }
+}
+function go(v){view=v; document.getElementById("sheet").classList.remove("on"); render();}
+document.addEventListener("click", async e=>{
+  const t=e.target.closest("[data-go],[data-topic],#doSearch,#copyBm,#openX,#imp,#clip,#menuBtn");
+  if(!t) return;
+  if(t.id==="menuBtn"){
+    document.getElementById("sheet").classList.add("on");
+    document.getElementById("sheetNav").innerHTML=`<p style="font-family:var(--display);font-size:1.2rem;">推探</p>`+
+      [["home","总览"],["search","搜索"],["creators","博主"],["posts","帖子"],["topics","话题"],["connect","接入"]].map(([id,l])=>`<button data-go="${id}" style="display:block;width:100%;text-align:left;height:44px;border:0;background:transparent;color:inherit;font:inherit;">${l}</button>`).join("");
+    return;
+  }
+  if(t.dataset.go){go(t.dataset.go);return;}
+  if(t.dataset.topic){const tp=TOPICS.find(x=>x.id===t.dataset.topic); S.q=tp?tp.name:t.dataset.topic; go("search"); return;}
+  if(t.id==="doSearch"){ S.q=document.getElementById("sq").value; store.jobs=(store.jobs||[]); store.jobs.unshift({q:S.q,at:Date.now()}); save(store); render(); return; }
+  if(t.id==="copyBm"){ await navigator.clipboard.writeText("javascript:"+encodeURIComponent(BM)).catch(()=>{}); toast("已复制书签脚本"); return; }
+  if(t.id==="openX"){
+    const plan=expand(S.q||"indie hacker");
+    const q=encodeURIComponent((plan.en[0]||S.q||"indie hacker")+" min_faves:20");
+    window.open("https://x.com/search?q="+q+"&src=typed_query&f=live","_blank");
+    toast("在 X 页点回传书签"); return;
+  }
+  if(t.id==="imp"){ S.raw=document.getElementById("raw").value; try{const n=ingest(JSON.parse(S.raw)); toast("入库 "+n+" 条"); go("search");}catch{toast("JSON 解析失败");} return; }
+  if(t.id==="clip"){ try{const n=ingest(JSON.parse(await navigator.clipboard.readText())); toast("入库 "+n+" 条"); go("search");}catch{toast("剪贴板没有可用 JSON");} return; }
+});
+document.addEventListener("change", e=>{
+  if(e.target.id==="ml") S.minLikes=Number(e.target.value||0);
+  if(e.target.id==="mb") S.minBm=Number(e.target.value||0);
+  if(e.target.id==="mv") S.minViews=Number(e.target.value||0);
+  if(e.target.id==="ml"||e.target.id==="mb"||e.target.id==="mv") render();
+});
+document.addEventListener("keydown", e=>{
+  if(e.key==="Enter" && e.target.id==="sq"){ S.q=e.target.value; render(); }
+});
+document.getElementById("sheet").addEventListener("click", e=>{ if(e.target.id==="sheet") e.target.classList.remove("on"); });
+render();
+</script>
+</body>
+</html>
