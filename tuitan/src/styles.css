@@ -1,0 +1,66 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --font-sans: "Noto Sans SC", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Instrument Serif", "Noto Serif SC", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --color-background: #0b0c0e;
+  --color-foreground: #eceae4;
+  --color-card: #141518;
+  --color-card-foreground: #eceae4;
+  --color-popover: #141518;
+  --color-popover-foreground: #eceae4;
+  --color-primary: #d8dce3;
+  --color-primary-foreground: #0b0c0e;
+  --color-secondary: #1c1e22;
+  --color-secondary-foreground: #eceae4;
+  --color-muted: #1c1e22;
+  --color-muted-foreground: #8b8d92;
+  --color-accent: #22242a;
+  --color-accent-foreground: #eceae4;
+  --color-destructive: #c45c5c;
+  --color-destructive-foreground: #eceae4;
+  --color-border: #2a2c31;
+  --color-input: #2a2c31;
+  --color-ring: #c8ccd4;
+  --color-ok: #5a9a74;
+  --color-warn: #b08948;
+  --radius: 0.85rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
